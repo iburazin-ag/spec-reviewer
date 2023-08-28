@@ -4,7 +4,6 @@ from docx.shared import Pt, RGBColor
 from docx.oxml import OxmlElement
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 
-
 def is_empty_cell(cell):
     for paragraph in cell.paragraphs:
         for run in paragraph.runs:
@@ -12,14 +11,13 @@ def is_empty_cell(cell):
             
             if xml_content.strip(): # Checks for any content - fix for image returning empty
                 return False  
-
     return True
 
 def comment_formatting(paragraph, finding_text):
     paragraph.add_run(finding_text).bold = True
     paragraph.runs[-1].font.color.rgb = RGBColor(0xFF, 0, 0)
 
-def mark_empty_cells_with(cell):
+def mark_empty_cells(cell):
     paragraph = cell.paragraphs[0]
 
     if is_empty_cell(cell):

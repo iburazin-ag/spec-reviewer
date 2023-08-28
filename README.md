@@ -8,6 +8,7 @@ The script detects the following, for now:
  - Absence of formatting comments when the content is center aligned
  - Issues with the CDASH column content - redundant spaces, missing hyphen, use of a dash instead of a hyphen
 
+
 ## Getting Started
 
 To get a local copy clone the repo: 
@@ -15,12 +16,14 @@ To get a local copy clone the repo:
    git clone https://github.com/iburazin-ag/spec-reviewer.git
 ```
 
+
 ### Prerequisites
 
 To be able to run this script, be sure to check if you have Python3 installed on your machine by running the following command in the terminal:
 ```sh
    python3 --version
 ```
+
 If you get the following error:
 ```sh
     Error: No developer tools installed.
@@ -42,14 +45,17 @@ Make sure you are in the same directory where the script is, and run the followi
 ```sh
    python3 spec-reviwer.py <file_local_path>
 ```
-For easier use, make sure that the document you want to run the script on is in the same directory as the script, that way you'll only have to provide the full name of the document.
 
-**NOTE:** There should be no spaces in the title of the document. 
+**NOTES:** 
+ - For easier use, make sure that the document you want to run the script on is in the same directory as the script, that way you'll only have to provide the full name of the document
+ - There should be no spaces in the title of the document.
+
 
 If there are no findings, the script will output the following in the terminal:
 ```sh
    No findings found!
 ```
+
 Otherwise, the following message will be displayed and the file scanned will be opened:
 ```sh
    Findings recorded in the file.
