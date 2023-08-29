@@ -23,6 +23,8 @@ def mark_empty_cells(cell):
     if is_empty_cell(cell):
         finding_text = "EMPTY"
         comment_formatting(paragraph, finding_text)
+        return True
+    return False
 
 def check_and_mark_cdash_cells(cell):
     cdash_text = cell.text.strip()
@@ -32,14 +34,17 @@ def check_and_mark_cdash_cells(cell):
         if "-" in cdash_text and (" -" in cdash_text or "- " in cdash_text):
             finding_text = "\nREDUNDANT SPACES"
             comment_formatting(paragraph, finding_text)
+            return True
         
         if "—" in cdash_text:
             finding_text = "\nDASH INSTEAD OF HYPHEN"
             comment_formatting(paragraph, finding_text)
+            return True
         
-        if "-" not in cdash_text and "N/A" not in cdash_text and "—" not in cdash_text:
+        if "-" not in cdash_text and "N/A" not in cdash_text:
             finding_text = "\nMISSING HYPHEN"
             comment_formatting(paragraph, finding_text)
+            return True
         
         return False
 
