@@ -98,7 +98,7 @@ if __name__ == "__main__":
             
             for table in document.tables:
                 cdash_col_idx = find_cdash_column(table)
-                for row_idx, row in enumerate(table.rows):
+                for row_idx, row in enumerate(table.rows[1:], start=1):
 
                     alignment_issue_cell = row.cells[-1]  
                 
