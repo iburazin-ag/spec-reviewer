@@ -124,7 +124,7 @@ if __name__ == "__main__":
                     for col_idx, cell in enumerate(row.cells):
 
                         if is_empty_cell(cell):
-                            mark_empty_cells_with(cell)
+                            mark_empty_cells(cell)
                             modified = True
             
             if modified:
