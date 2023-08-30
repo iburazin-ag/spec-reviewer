@@ -8,8 +8,8 @@ from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Spec Scanner with Optional Checks")
     parser.add_argument("file_path", help="Path to the Word document file")
-    parser.add_argument("--ignore-line-breaks", action="store_true", help="Ignore line break check")
-    parser.add_argument("--ignore-formatting", action="store_true", help="Ignore formatting check")
+    parser.add_argument("--skip-line-breaks", action="store_true", help="Skip line break check")
+    parser.add_argument("--skip-formatting", action="store_true", help="Skip formatting check")
     return parser.parse_args()
 
 def is_empty_cell(cell):
@@ -24,6 +24,16 @@ def comment_formatting(paragraph, finding_text):
     paragraph.add_run(finding_text).bold = True
     paragraph.runs[-1].font.color.rgb = RGBColor(0xFF, 0, 0)
 
+def check_for_existing_findings(cell):
+    for paragraph in cell.paragraphs:
+        for run in paragraph.runs:
+            if run.bold and run.font.color.rgb == RGBColor(0xFF, 0, 0):
+                text = run.text.strip()
+                if text.isupper():
+                    run.font.underline = True
+                    return True
+    return False
+
 def mark_empty_cells(cell):
     paragraph = cell.paragraphs[0]
     if is_empty_cell(cell):
@@ -35,7 +45,7 @@ def mark_empty_cells(cell):
 def check_and_mark_cdash_cells(cell):
     cdash_text = cell.text.strip()
     paragraph = cell.paragraphs[0]
-    if not check_for_existing_findings(cell.paragraphs):
+    if not check_for_existing_findings(cell):
         if "-" in cdash_text and (" -" in cdash_text or "- " in cdash_text):
             finding_text = "\nREDUNDANT SPACES"
             comment_formatting(paragraph, finding_text)
@@ -63,28 +73,18 @@ def check_and_mark_alignment_issue(cell, last_column_cell):
     alignment_missing = False
     for paragraph in cell.paragraphs:
         alignment = paragraph.alignment
-        paragraph = last_column_cell.paragraphs[0]
+        paragraph = last_column_cell.paragraphs[-1]
 
-        if alignment == WD_PARAGRAPH_ALIGNMENT.CENTER and not ignore_formatting:
-            if "center aligned" not in last_column_cell.text and not check_for_existing_findings(last_column_cell.paragraphs):
+        if alignment == WD_PARAGRAPH_ALIGNMENT.CENTER and not skip_formatting:
+            if "center aligned" not in last_column_cell.text and not check_for_existing_findings(last_column_cell):
                 finding_text = "\nMISSING ALIGNMENT/FORMATTING COMMENT"
                 comment_formatting(paragraph, finding_text)
                 alignment_missing = True
                 break
     return alignment_missing
 
-def check_for_existing_findings(paragraphs):
-    for paragraph in paragraphs:
-        for run in paragraph.runs:
-            if run.bold and run.font.color.rgb == RGBColor(0xFF, 0, 0):
-                text = run.text.strip()
-                if text.isupper():
-                    run.font.underline = True
-                    return True
-    return False
-
 def check_line_breaks(cell):
-    if not ignore_line_breaks and '\n' in cell.text and not check_for_existing_findings(cell.paragraphs):
+    if not skip_line_breaks and '\n' in cell.text and not check_for_existing_findings(cell):
         paragraph = cell.paragraphs[-1]
         finding_text = "\nCHECK LINE BREAKS"
         comment_formatting(paragraph, finding_text)
@@ -94,11 +94,11 @@ def check_line_breaks(cell):
 if __name__ == "__main__":
     args = parse_arguments()
     file_path = args.file_path
-    ignore_line_breaks = args.ignore_line_breaks
-    ignore_formatting = args.ignore_formatting
+    skip_line_breaks = args.skip_line_breaks
+    skip_formatting = args.skip_formatting
 
     if len(sys.argv) < 2:
-        print("Usage: python3 word_table_scanner.py <local_file_path> optional-ignore-flag")
+        print("Usage: python3 word_table_scanner.py <local_file_path> optional-skip-flag")
     elif not os.path.exists(file_path):
         print("Cannot find the provided file. Please check the file name and path.")
     else:
@@ -119,13 +119,11 @@ if __name__ == "__main__":
                         break
 
                 for col_idx, cell in enumerate(row.cells[:-1], start=1):  # Exclude the last column
-                    if check_for_existing_findings(cell.paragraphs):
-                            modified = True
+                    alignment_issue = check_and_mark_alignment_issue(cell, alignment_issue_cell)
 
                     if check_line_breaks(cell):
                         modified = True
-
-                    alignment_issue = check_and_mark_alignment_issue(cell, alignment_issue_cell)
+                        break
 
                     if alignment_issue:
                         modified = True
@@ -133,9 +131,14 @@ if __name__ == "__main__":
             
             for row_idx, row in enumerate(table.rows):
                 for col_idx, cell in enumerate(row.cells):
+                    if check_for_existing_findings(cell):
+                        modified = True
+                        break
+
                     if is_empty_cell(cell):
                         mark_empty_cells(cell)
                         modified = True
+                        break
         
         if modified:
             document.save(file_path)  

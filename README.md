@@ -50,7 +50,7 @@ Make sure you are in the same directory where the script is, and run the followi
 ```
 If you want to skip some of the checks, you can use optional flags like in the example below:
 ```sh
-   python3 spec-reviwer.py <file_local_path> --ignore-line-breaks 
+   python3 spec-reviwer.py <file_local_path> --skip-line-breaks 
 ```
 Run the script with the --help flag for the list and a brief description of the arguments.
 
