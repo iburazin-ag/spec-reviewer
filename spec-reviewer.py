@@ -8,8 +8,7 @@ def is_empty_cell(cell):
     for paragraph in cell.paragraphs:
         for run in paragraph.runs:
             xml_content = run._r.xml
-            
-            if xml_content.strip(): # Checks for any content - fix for image returning empty
+            if xml_content.strip(): 
                 return False  
     return True
 
@@ -19,7 +18,6 @@ def comment_formatting(paragraph, finding_text):
 
 def mark_empty_cells(cell):
     paragraph = cell.paragraphs[0]
-
     if is_empty_cell(cell):
         finding_text = "EMPTY"
         comment_formatting(paragraph, finding_text)
@@ -29,7 +27,6 @@ def mark_empty_cells(cell):
 def check_and_mark_cdash_cells(cell):
     cdash_text = cell.text.strip()
     paragraph = cell.paragraphs[0]
-    
     if not check_for_existing_findings(cell.paragraphs):
         if "-" in cdash_text and (" -" in cdash_text or "- " in cdash_text):
             finding_text = "\nREDUNDANT SPACES"
@@ -56,7 +53,6 @@ def find_cdash_column(table):
 
 def check_and_mark_alignment_issue(cell, last_column_cell):
     alignment_missing = False
-    
     for paragraph in cell.paragraphs:
         alignment = paragraph.alignment
         paragraph = last_column_cell.paragraphs[0]
@@ -67,7 +63,6 @@ def check_and_mark_alignment_issue(cell, last_column_cell):
                 comment_formatting(paragraph, finding_text)
                 alignment_missing = True
                 break
-    
     return alignment_missing
 
 def check_for_existing_findings(paragraphs):
@@ -80,6 +75,14 @@ def check_for_existing_findings(paragraphs):
                     return True
     return False
 
+def check_line_breaks(cell):
+    if '\n' in cell.text and not check_for_existing_findings(cell.paragraphs):
+        paragraph = cell.paragraphs[-1]
+        finding_text = "\nCHECK LINE BREAKS"
+        comment_formatting(paragraph, finding_text)
+        return True
+    return False
+  
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python3 word_table_scanner.py <box_file_link_or_local_path>") # link args not accepted for now
@@ -100,27 +103,29 @@ if __name__ == "__main__":
                 cdash_col_idx = find_cdash_column(table)
                 for row_idx, row in enumerate(table.rows[1:], start=1):
                     alignment_issue_cell = row.cells[-1]
-
+                    
                     if cdash_col_idx is not None:
                         cdash_cell = row.cells[cdash_col_idx]
                         
                         if check_and_mark_cdash_cells(cdash_cell):
                             modified = True
-                            break  
-                
+                            break
+
                     for col_idx, cell in enumerate(row.cells[:-1], start=1):  # Exclude the last column
                         if check_for_existing_findings(cell.paragraphs):
+                                modified = True
+
+                        if check_line_breaks(cell):
                             modified = True
 
                         alignment_issue = check_and_mark_alignment_issue(cell, alignment_issue_cell)
 
                         if alignment_issue:
                             modified = True
-                            break  
+                            break   
                 
                 for row_idx, row in enumerate(table.rows):
                     for col_idx, cell in enumerate(row.cells):
-
                         if is_empty_cell(cell):
                             mark_empty_cells(cell)
                             modified = True
