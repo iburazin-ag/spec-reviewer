@@ -24,12 +24,16 @@ def comment_formatting(paragraph, finding_text):
     paragraph.add_run(finding_text).bold = True
     paragraph.runs[-1].font.color.rgb = RGBColor(0xFF, 0, 0)
 
-def check_for_existing_findings(cell):
+def check_for_existing_findings(cell, finding_text=None):
     for paragraph in cell.paragraphs:
         for run in paragraph.runs:
             if run.bold and run.font.color.rgb == RGBColor(0xFF, 0, 0):
                 text = run.text.strip()
-                if text.isupper():
+                if finding_text is None:
+                    if text.isupper():
+                        run.font.underline = True
+                        return True
+                elif finding_text.strip() in text and text.isupper():
                     run.font.underline = True
                     return True
     return False
@@ -44,24 +48,28 @@ def mark_empty_cells(cell):
 
 def check_and_mark_cdash_cells(cell):
     cdash_text = cell.text.strip()
-    paragraph = cell.paragraphs[0]
-    if not check_for_existing_findings(cell):
-        if "-" in cdash_text and (" -" in cdash_text or "- " in cdash_text):
-            finding_text = "\nREDUNDANT SPACES"
+    paragraph = cell.paragraphs[-1]
+   
+    if "-" in cdash_text and (" -" in cdash_text or "- " in cdash_text):
+        finding_text = "\nREDUNDANT SPACES"
+        if not check_for_existing_findings(cell, finding_text):
             comment_formatting(paragraph, finding_text)
             return True
-        
-        if "—" in cdash_text:
-            finding_text = "\nDASH INSTEAD OF HYPHEN"
+    return False
+
+    if "—" in cdash_text:
+        finding_text = "\nDASH INSTEAD OF HYPHEN"
+        if not check_for_existing_findings(cell, finding_text):
             comment_formatting(paragraph, finding_text)
             return True
-        
-        if "-" not in cdash_text and "N/A" not in cdash_text:
-            finding_text = "\nMISSING HYPHEN"
+    return False
+    
+    if "-" not in cdash_text and "N/A" not in cdash_text and "—" not in cdash_text:
+        finding_text = "\nMISSING HYPHEN"
+        if not check_for_existing_findings(cell, finding_text):
             comment_formatting(paragraph, finding_text)
             return True
-        
-        return False
+    return False
 
 def find_cdash_column(table):
     for col_idx, cell in enumerate(table.rows[0].cells):
@@ -74,19 +82,19 @@ def check_and_mark_alignment_issue(cell, last_column_cell):
     for paragraph in cell.paragraphs:
         alignment = paragraph.alignment
         paragraph = last_column_cell.paragraphs[-1]
+        finding_text = "\nMISSING ALIGNMENT/FORMATTING COMMENT"
 
         if alignment == WD_PARAGRAPH_ALIGNMENT.CENTER and not skip_formatting:
-            if "center aligned" not in last_column_cell.text and not check_for_existing_findings(last_column_cell):
-                finding_text = "\nMISSING ALIGNMENT/FORMATTING COMMENT"
+            if "center aligned" not in last_column_cell.text and not check_for_existing_findings(last_column_cell, finding_text):
                 comment_formatting(paragraph, finding_text)
                 alignment_missing = True
                 break
     return alignment_missing
 
 def check_line_breaks(cell):
-    if not skip_line_breaks and '\n' in cell.text and not check_for_existing_findings(cell):
+    finding_text = "\nCHECK LINE BREAKS"
+    if not skip_line_breaks and '\n' in cell.text and not check_for_existing_findings(cell, finding_text):
         paragraph = cell.paragraphs[-1]
-        finding_text = "\nCHECK LINE BREAKS"
         comment_formatting(paragraph, finding_text)
         return True
     return False
@@ -108,6 +116,18 @@ if __name__ == "__main__":
         
         for table in document.tables:
             cdash_col_idx = find_cdash_column(table)
+
+            for row_idx, row in enumerate(table.rows):
+                for col_idx, cell in enumerate(row.cells):
+                    if check_for_existing_findings(cell):
+                        modified = True
+                        break
+
+                    if is_empty_cell(cell):
+                        mark_empty_cells(cell)
+                        modified = True
+                        break
+
             for row_idx, row in enumerate(table.rows[1:], start=1):
                 alignment_issue_cell = row.cells[-1]
                 
@@ -128,17 +148,6 @@ if __name__ == "__main__":
                     if alignment_issue:
                         modified = True
                         break   
-            
-            for row_idx, row in enumerate(table.rows):
-                for col_idx, cell in enumerate(row.cells):
-                    if check_for_existing_findings(cell):
-                        modified = True
-                        break
-
-                    if is_empty_cell(cell):
-                        mark_empty_cells(cell)
-                        modified = True
-                        break
         
         if modified:
             document.save(file_path)  
