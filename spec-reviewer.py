@@ -99,8 +99,14 @@ if __name__ == "__main__":
             for table in document.tables:
                 cdash_col_idx = find_cdash_column(table)
                 for row_idx, row in enumerate(table.rows[1:], start=1):
+                    alignment_issue_cell = row.cells[-1]
 
-                    alignment_issue_cell = row.cells[-1]  
+                    if cdash_col_idx is not None:
+                        cdash_cell = row.cells[cdash_col_idx]
+                        
+                        if check_and_mark_cdash_cells(cdash_cell):
+                            modified = True
+                            break  
                 
                     for col_idx, cell in enumerate(row.cells[:-1], start=1):  # Exclude the last column
                         if check_for_existing_findings(cell.paragraphs):
@@ -109,14 +115,6 @@ if __name__ == "__main__":
                         alignment_issue = check_and_mark_alignment_issue(cell, alignment_issue_cell)
 
                         if alignment_issue:
-                            modified = True
-                            break 
-                
-                if cdash_col_idx is not None:
-                    for row_idx, row in enumerate(table.rows[1:], start=1):
-                        cdash_cell = row.cells[cdash_col_idx]
-                        
-                        if check_and_mark_cdash_cells(cdash_cell):
                             modified = True
                             break  
                 
