@@ -99,55 +99,51 @@ if __name__ == "__main__":
 
     if len(sys.argv) < 2:
         print("Usage: python3 word_table_scanner.py <local_file_path> optional-ignore-flag")
+    elif not os.path.exists(file_path):
+        print("Cannot find the provided file. Please check the file name and path.")
     else:
-        input_arg = sys.argv[1]
-        
-        if os.path.exists(input_arg):
-            file_path = input_arg
-        
-        if file_path:
-            document = Document(file_path)
-                
-            modified = False
+        document = Document(file_path)
             
-            for table in document.tables:
-                cdash_col_idx = find_cdash_column(table)
-                for row_idx, row in enumerate(table.rows[1:], start=1):
-                    alignment_issue_cell = row.cells[-1]
+        modified = False
+        
+        for table in document.tables:
+            cdash_col_idx = find_cdash_column(table)
+            for row_idx, row in enumerate(table.rows[1:], start=1):
+                alignment_issue_cell = row.cells[-1]
+                
+                if cdash_col_idx is not None:
+                    cdash_cell = row.cells[cdash_col_idx]
                     
-                    if cdash_col_idx is not None:
-                        cdash_cell = row.cells[cdash_col_idx]
-                        
-                        if check_and_mark_cdash_cells(cdash_cell):
-                            modified = True
-                            break
+                    if check_and_mark_cdash_cells(cdash_cell):
+                        modified = True
+                        break
 
-                    for col_idx, cell in enumerate(row.cells[:-1], start=1):  # Exclude the last column
-                        if check_for_existing_findings(cell.paragraphs):
-                                modified = True
-
-                        if check_line_breaks(cell):
+                for col_idx, cell in enumerate(row.cells[:-1], start=1):  # Exclude the last column
+                    if check_for_existing_findings(cell.paragraphs):
                             modified = True
 
-                        alignment_issue = check_and_mark_alignment_issue(cell, alignment_issue_cell)
+                    if check_line_breaks(cell):
+                        modified = True
 
-                        if alignment_issue:
-                            modified = True
-                            break   
-                
-                for row_idx, row in enumerate(table.rows):
-                    for col_idx, cell in enumerate(row.cells):
-                        if is_empty_cell(cell):
-                            mark_empty_cells(cell)
-                            modified = True
+                    alignment_issue = check_and_mark_alignment_issue(cell, alignment_issue_cell)
+
+                    if alignment_issue:
+                        modified = True
+                        break   
             
-            if modified:
-                document.save(file_path)  
-                print("\033[91mFindings recorded in the file.\033[0m")
+            for row_idx, row in enumerate(table.rows):
+                for col_idx, cell in enumerate(row.cells):
+                    if is_empty_cell(cell):
+                        mark_empty_cells(cell)
+                        modified = True
+        
+        if modified:
+            document.save(file_path)  
+            print("\033[91mFindings recorded in the file.\033[0m")
 
-                try:
-                    subprocess.run(["open", file_path], check=True)
-                except subprocess.CalledProcessError:
-                    print("Failed to open the modified file.")
-            else:
-                print("\033[92mNo findings found!\033[0m")
+            try:
+                subprocess.run(["open", file_path], check=True)
+            except subprocess.CalledProcessError:
+                print("Failed to open the modified file.")
+        else:
+            print("\033[92mNo findings found!\033[0m")
