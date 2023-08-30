@@ -3,10 +3,13 @@ Simple Python script for spec reviews.
 
 The intention is to quickly identify and record minor issues in a specification file.
 
-The script detects the following, for now: 
+The script detects the following: 
  - Empty cells 
  - Absence of formatting comments when the content is center aligned
  - Issues with the CDASH column content - redundant spaces, missing hyphen, use of a dash instead of a hyphen
+ - Line breaks in cells/paragraphs
+
+ User can also choose to skip some of the checks by adding one or more flags when running the script.
 
 
 ## Getting Started
@@ -45,6 +48,11 @@ Make sure you are in the same directory where the script is, and run the followi
 ```sh
    python3 spec-reviwer.py <file_local_path>
 ```
+If you want to skip some of the checks, you can use optional flags like in the example below:
+```sh
+   python3 spec-reviwer.py <file_local_path> --ignore-line-breaks 
+```
+Run the script with the --help flag for the list and a brief description of the arguments.
 
 **NOTES:** 
  - For easier use, make sure that the document you want to run the script on is in the same directory as the script, that way you'll only have to provide the full name of the document

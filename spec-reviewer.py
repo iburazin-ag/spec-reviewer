@@ -1,8 +1,16 @@
 import sys, os, subprocess
+import argparse
 from docx import Document
 from docx.shared import Pt, RGBColor
 from docx.oxml import OxmlElement
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Spec Scanner with Optional Checks")
+    parser.add_argument("file_path", help="Path to the Word document file")
+    parser.add_argument("--ignore-line-breaks", action="store_true", help="Ignore line break check")
+    parser.add_argument("--ignore-formatting", action="store_true", help="Ignore formatting check")
+    return parser.parse_args()
 
 def is_empty_cell(cell):
     for paragraph in cell.paragraphs:
@@ -57,7 +65,7 @@ def check_and_mark_alignment_issue(cell, last_column_cell):
         alignment = paragraph.alignment
         paragraph = last_column_cell.paragraphs[0]
 
-        if alignment == WD_PARAGRAPH_ALIGNMENT.CENTER:
+        if alignment == WD_PARAGRAPH_ALIGNMENT.CENTER and not ignore_formatting:
             if "center aligned" not in last_column_cell.text and not check_for_existing_findings(last_column_cell.paragraphs):
                 finding_text = "\nMISSING ALIGNMENT/FORMATTING COMMENT"
                 comment_formatting(paragraph, finding_text)
@@ -76,7 +84,7 @@ def check_for_existing_findings(paragraphs):
     return False
 
 def check_line_breaks(cell):
-    if '\n' in cell.text and not check_for_existing_findings(cell.paragraphs):
+    if not ignore_line_breaks and '\n' in cell.text and not check_for_existing_findings(cell.paragraphs):
         paragraph = cell.paragraphs[-1]
         finding_text = "\nCHECK LINE BREAKS"
         comment_formatting(paragraph, finding_text)
@@ -84,15 +92,18 @@ def check_line_breaks(cell):
     return False
   
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 word_table_scanner.py <box_file_link_or_local_path>") # link args not accepted for now
+    args = parse_arguments()
+    file_path = args.file_path
+    ignore_line_breaks = args.ignore_line_breaks
+    ignore_formatting = args.ignore_formatting
+
+    if len(sys.argv) < 2:
+        print("Usage: python3 word_table_scanner.py <local_file_path> optional-ignore-flag")
     else:
         input_arg = sys.argv[1]
         
         if os.path.exists(input_arg):
             file_path = input_arg
-        else:
-            file_path = download_box_file(input_arg) # currently not functional 
         
         if file_path:
             document = Document(file_path)
