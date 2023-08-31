@@ -38,6 +38,25 @@ def check_for_existing_findings(cell, finding_text=None):
                     return True
     return False
 
+def check_copyright_alignment(cell, last_column_cell):
+    cell_text = cell.text
+    paragraph = cell.paragraphs[0]
+    finding_text = "\nMISSING ALIGNMENT FOR COPYRIGHT TEXT"
+
+    if not check_for_existing_findings(cell, finding_text.strip()):
+        if "Copyright" in cell_text or "©" in cell_text:
+            if "Screen Text" not in last_column_cell.text:
+                comment_formatting(paragraph, finding_text)
+                return True
+        
+        return False
+    
+def find_column(table, word):
+    for col_idx, cell in enumerate(table.rows[0].cells):
+        if word in cell.text.upper():
+            return col_idx
+    return None
+
 def mark_empty_cells(cell):
     paragraph = cell.paragraphs[0]
     if is_empty_cell(cell):
@@ -69,12 +88,6 @@ def check_and_mark_cdash_cells(cell):
             return True
     
     return False
-
-def find_cdash_column(table):
-    for col_idx, cell in enumerate(table.rows[0].cells):
-        if "CDASH" in cell.text.upper():
-            return col_idx
-    return None
 
 def check_and_mark_alignment_issue(cell, last_column_cell):
     alignment_missing = False
@@ -116,7 +129,9 @@ if __name__ == "__main__":
         modified = False
         
         for table in document.tables:
-            cdash_col_idx = find_cdash_column(table)
+            cdash_col_idx = find_column(table, "CDASH")
+            screen_text_col_idx = find_column(table, "Screen Text".upper())
+            step_name_col_idx = find_column(table, "Step Name".upper())
 
             for row_idx, row in enumerate(table.rows):
                 for col_idx, cell in enumerate(row.cells):
@@ -139,6 +154,20 @@ if __name__ == "__main__":
                     modified = True
                     break
 
+                if screen_text_col_idx is not None:
+                    screen_text_cell = row.cells[screen_text_col_idx]
+
+                if check_copyright_alignment(screen_text_cell, alignment_issue_cell):
+                    modified = True
+                    break
+
+                if step_name_col_idx is not None:
+                    step_name_cell = row.cells[step_name_col_idx]
+
+                if check_copyright_alignment(step_name_cell, alignment_issue_cell):
+                    modified = True
+                    break 
+
                 for col_idx, cell in enumerate(row.cells[:-1], start=1):  # Exclude the last column
                     alignment_issue = check_and_mark_alignment_issue(cell, alignment_issue_cell)
 
@@ -148,7 +177,7 @@ if __name__ == "__main__":
 
                     if alignment_issue:
                         modified = True
-                        break   
+                        break
         
         if modified:
             document.save(file_path)  
