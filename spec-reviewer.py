@@ -1,8 +1,7 @@
 import sys, os, subprocess
 import argparse
 from docx import Document
-from docx.shared import Pt, RGBColor
-from docx.oxml import OxmlElement
+from docx.shared import RGBColor
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 
 def parse_arguments():
@@ -56,20 +55,19 @@ def check_and_mark_cdash_cells(cell):
         if not check_for_existing_findings(cell, finding_text.strip()):
             comment_formatting(paragraph, finding_text)
             return True
-    return False
 
     if "—" in cdash_text:
         finding_text = "\nDASH INSTEAD OF HYPHEN"
         if not check_for_existing_findings(cell, finding_text.strip()):
             comment_formatting(paragraph, finding_text)
             return True
-    return False
     
     if "-" not in cdash_text and "N/A" not in cdash_text and "—" not in cdash_text:
         finding_text = "\nMISSING HYPHEN"
         if not check_for_existing_findings(cell, finding_text.strip()):
             comment_formatting(paragraph, finding_text)
             return True
+    
     return False
 
 def find_cdash_column(table):
@@ -95,7 +93,7 @@ def check_and_mark_alignment_issue(cell, last_column_cell):
 
 def check_line_breaks(cell):
     finding_text = "\nCHECK LINE BREAKS"
-    finding_exists =check_for_existing_findings(cell, finding_text.strip())
+    finding_exists = check_for_existing_findings(cell, finding_text.strip())
 
     if not skip_line_breaks and '\n' in cell.text and not finding_exists:
         paragraph = cell.paragraphs[-1]
