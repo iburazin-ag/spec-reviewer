@@ -75,7 +75,7 @@ def check_and_mark_cdash_cells(cell):
             comment_formatting(paragraph, finding_text)
             return True
 
-    if "—" in cdash_text:
+    if "–" in cdash_text:
         finding_text = "\nDASH INSTEAD OF HYPHEN"
         if not check_for_existing_findings(cell, finding_text.strip()):
             comment_formatting(paragraph, finding_text)
@@ -137,12 +137,10 @@ if __name__ == "__main__":
                 for col_idx, cell in enumerate(row.cells):
                     if check_for_existing_findings(cell):
                         modified = True
-                        break
 
                     if is_empty_cell(cell):
                         mark_empty_cells(cell)
                         modified = True
-                        break
 
             for row_idx, row in enumerate(table.rows[1:], start=1):
                 alignment_issue_cell = row.cells[-1]
@@ -152,32 +150,27 @@ if __name__ == "__main__":
                     
                 if check_and_mark_cdash_cells(cdash_cell):
                     modified = True
-                    break
 
                 if screen_text_col_idx is not None:
                     screen_text_cell = row.cells[screen_text_col_idx]
 
                 if check_copyright_alignment(screen_text_cell, alignment_issue_cell):
                     modified = True
-                    break
 
                 if step_name_col_idx is not None:
                     step_name_cell = row.cells[step_name_col_idx]
 
                 if check_copyright_alignment(step_name_cell, alignment_issue_cell):
                     modified = True
-                    break 
 
                 for col_idx, cell in enumerate(row.cells[:-1], start=1):  # Exclude the last column
                     alignment_issue = check_and_mark_alignment_issue(cell, alignment_issue_cell)
 
                     if check_line_breaks(cell):
                         modified = True
-                        break
 
                     if alignment_issue:
                         modified = True
-                        break
         
         if modified:
             document.save(file_path)  
