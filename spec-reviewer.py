@@ -3,6 +3,7 @@ import argparse
 from docx import Document
 from docx.shared import RGBColor
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.oxml import OxmlElement
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Spec Scanner with Optional Checks")
@@ -25,6 +26,7 @@ def comment_formatting(paragraph, finding_text):
     paragraph.runs[-1].font.color.rgb = RGBColor(0xFF, 0, 0)
 
 def check_for_existing_findings(cell, finding_text=None):
+    found = False
     for paragraph in cell.paragraphs:
         for run in paragraph.runs:
             if run.bold and run.font.color.rgb == RGBColor(0xFF, 0, 0):
@@ -32,17 +34,16 @@ def check_for_existing_findings(cell, finding_text=None):
                 if finding_text is None:
                     if text.isupper():
                         run.font.underline = True
-                        return True
+                        found = True
                 elif finding_text in text and text.isupper():
                     run.font.underline = True
-                    return True
-    return False
+                    found = True
+    return found
 
 def check_copyright_alignment(cell, last_column_cell):
     cell_text = cell.text
     paragraph = cell.paragraphs[0]
     finding_text = "\nMISSING ALIGNMENT FOR COPYRIGHT TEXT"
-
     if not check_for_existing_findings(cell, finding_text.strip()):
         if "Copyright" in cell_text or "©" in cell_text:
             if "Screen Text" not in last_column_cell.text:
@@ -75,7 +76,7 @@ def check_and_mark_cdash_cells(cell):
             comment_formatting(paragraph, finding_text)
             return True
 
-    if "–" in cdash_text:
+    if "– " in cdash_text:
         finding_text = "\nDASH INSTEAD OF HYPHEN"
         if not check_for_existing_findings(cell, finding_text.strip()):
             comment_formatting(paragraph, finding_text)
