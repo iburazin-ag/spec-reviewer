@@ -21,6 +21,7 @@ def is_empty_cell(cell):
     return True
 
 def comment_formatting(paragraph, finding_text):
+    paragraph.add_run().add_break()
     paragraph.add_run(finding_text).bold = True
     paragraph.runs[-1].font.color.rgb = RGBColor(0xFF, 0, 0)
 
@@ -33,7 +34,7 @@ def check_for_existing_findings(cell, finding_text=None):
                     if text.isupper():
                         run.font.underline = True
                         return True
-                elif finding_text.strip() in text and text.isupper():
+                elif finding_text in text and text.isupper():
                     run.font.underline = True
                     return True
     return False
@@ -52,21 +53,21 @@ def check_and_mark_cdash_cells(cell):
    
     if "-" in cdash_text and (" -" in cdash_text or "- " in cdash_text):
         finding_text = "\nREDUNDANT SPACES"
-        if not check_for_existing_findings(cell, finding_text):
+        if not check_for_existing_findings(cell, finding_text.strip()):
             comment_formatting(paragraph, finding_text)
             return True
     return False
 
     if "—" in cdash_text:
         finding_text = "\nDASH INSTEAD OF HYPHEN"
-        if not check_for_existing_findings(cell, finding_text):
+        if not check_for_existing_findings(cell, finding_text.strip()):
             comment_formatting(paragraph, finding_text)
             return True
     return False
     
     if "-" not in cdash_text and "N/A" not in cdash_text and "—" not in cdash_text:
         finding_text = "\nMISSING HYPHEN"
-        if not check_for_existing_findings(cell, finding_text):
+        if not check_for_existing_findings(cell, finding_text.strip()):
             comment_formatting(paragraph, finding_text)
             return True
     return False
@@ -83,9 +84,10 @@ def check_and_mark_alignment_issue(cell, last_column_cell):
         alignment = paragraph.alignment
         paragraph = last_column_cell.paragraphs[-1]
         finding_text = "\nMISSING ALIGNMENT/FORMATTING COMMENT"
+        finding_exists =check_for_existing_findings(last_column_cell, finding_text.strip())
 
-        if alignment == WD_PARAGRAPH_ALIGNMENT.CENTER and not skip_formatting:
-            if "center aligned" not in last_column_cell.text and not check_for_existing_findings(last_column_cell, finding_text):
+        if not skip_formatting and alignment == WD_PARAGRAPH_ALIGNMENT.CENTER:
+            if "center aligned" not in last_column_cell.text and not finding_exists:
                 comment_formatting(paragraph, finding_text)
                 alignment_missing = True
                 break
@@ -93,7 +95,9 @@ def check_and_mark_alignment_issue(cell, last_column_cell):
 
 def check_line_breaks(cell):
     finding_text = "\nCHECK LINE BREAKS"
-    if not skip_line_breaks and '\n' in cell.text and not check_for_existing_findings(cell, finding_text):
+    finding_exists =check_for_existing_findings(cell, finding_text.strip())
+
+    if not skip_line_breaks and '\n' in cell.text and not finding_exists:
         paragraph = cell.paragraphs[-1]
         comment_formatting(paragraph, finding_text)
         return True
@@ -111,7 +115,6 @@ if __name__ == "__main__":
         print("Cannot find the provided file. Please check the file name and path.")
     else:
         document = Document(file_path)
-            
         modified = False
         
         for table in document.tables:
@@ -134,9 +137,9 @@ if __name__ == "__main__":
                 if cdash_col_idx is not None:
                     cdash_cell = row.cells[cdash_col_idx]
                     
-                    if check_and_mark_cdash_cells(cdash_cell):
-                        modified = True
-                        break
+                if check_and_mark_cdash_cells(cdash_cell):
+                    modified = True
+                    break
 
                 for col_idx, cell in enumerate(row.cells[:-1], start=1):  # Exclude the last column
                     alignment_issue = check_and_mark_alignment_issue(cell, alignment_issue_cell)
@@ -152,7 +155,6 @@ if __name__ == "__main__":
         if modified:
             document.save(file_path)  
             print("\033[91mFindings recorded in the file.\033[0m")
-
             try:
                 subprocess.run(["open", file_path], check=True)
             except subprocess.CalledProcessError:
