@@ -3,6 +3,7 @@ import argparse
 from docx import Document
 from docx.shared import RGBColor
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.oxml import OxmlElement
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Spec Scanner with Optional Checks")
